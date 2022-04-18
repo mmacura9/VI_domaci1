@@ -5,9 +5,10 @@ Created on Thu Apr 14 15:19:50 2022
 @author: mm180261d
 """
 
+import math
+import matplotlib.pyplot as plt
 import numpy as np
 import random
-import math
 
 def func(x: np.array) -> float:
     """
@@ -31,7 +32,7 @@ def func(x: np.array) -> float:
     x3 = x[2]
     return 4*(x1*x1 + x2*x2 - x1*x2)**(0.75)/3 + x3
 
-def sk(x: np.array, T: np.array, Mk: int) -> np.array:
+def sk(x: np.array, T: np.array, Mk: int) -> tuple:
     """
     
 
@@ -46,15 +47,17 @@ def sk(x: np.array, T: np.array, Mk: int) -> np.array:
 
     Returns
     -------
-    Resenje jednacine.
+    Niz najboljih resenja i niz trenutnih resenja.
 
     """
     output = x
+    foutput = []
+    fx = []
     k = 0
-    while T[k]!=0:
+    while k<=T.size and T[k]!=0:
         for m in range(Mk):
-            razlika = (T[k]*(np.random.rand(1, 3)[0] - 0.5))
-            x1 = x + razlika - razlika.astype(int)
+            razlika = (np.random.rand(1, 3)[0]- 0.5)
+            x1 = x + razlika
             x1[x1<0] = 0
             x1[x1>2] = 2
             delta = func(x1) - func(x)
@@ -65,12 +68,54 @@ def sk(x: np.array, T: np.array, Mk: int) -> np.array:
             else:
                 if random.random() <= math.exp(-delta/T[k]):
                     x = x1
+            fx = fx + [func(x)]
+            foutput = foutput + [func(output)]
         k = k+1
-    return output
+    return output, x, foutput, fx
+
+def pps(bd: int) -> tuple:
+    """
+    
+    
+    
+     Parameters
+    ----------
+    bd : int
+        Broj dece.
+
+    Returns
+    -------
+    tuple
+        Pretraga po snopu.
+
+    """
+    x = np.random.rand(bd, 3)*2
+    najbolje = 10000
+    najbolje_x = x[0, :]
+    najbolje1 = 100000
+    while najbolje < najbolje1:
+        najbolje1 = najbolje
+        lista_najboljih = []
+        f_najboljih = []
+        for i in x:
+            lista_najboljih = lista_najboljih + [i]
+            f_najboljih = f_najboljih + [func(i)]
+            
+        lista_najboljih = [i for _,i in sorted(zip(f_najboljih, lista_najboljih))]
+        lista_najboljih = lista_najboljih[0:5]
+        x = np.array([])
+        for i in lista_najboljih:
+            x1 = i + np.random.rand(bd, 3)*0.2-0.1
+            x1[x1<0] = 0
+            x1[x1>2] = 2
+            if x.size == 0:
+                x = x1
+            else:
+                x = np.append(x, x1, axis=0)
+            if najbolje > func(i):
+                najbolje = func(i)
+                najbolje_x = i
+    print(najbolje, najbolje_x)
 
 if __name__ == "__main__":
-    T = np.arange(21)/10
-    T = np.flip(T)
-    x = np.random.rand(1, 3)*2
-    x = x[0]
-    x = sk(x, T, 10)
+    pps(50)
