@@ -73,7 +73,7 @@ def sk(x: np.array, T: np.array, Mk: int) -> tuple:
         k = k+1
     return output, x, foutput, fx
 
-def pps(bd: int) -> tuple:
+def pps(bd: int, naj: int) -> tuple:
     """
     
     
@@ -82,6 +82,8 @@ def pps(bd: int) -> tuple:
     ----------
     bd : int
         Broj dece.
+    naj : int
+        Biranje naj najboljih.
 
     Returns
     -------
@@ -89,22 +91,23 @@ def pps(bd: int) -> tuple:
         Pretraga po snopu.
 
     """
-    x = np.random.rand(bd, 3)*2
+    x = np.random.rand(50, 3)*2
     najbolje = 10000
-    najbolje_x = x[0, :]
+    najbolje_x = x[bd, :]
     najbolje1 = 100000
+    prosecni = []
+    lista_najboljih = []
     while najbolje < najbolje1:
         najbolje1 = najbolje
-        lista_najboljih = []
-        f_najboljih = []
-        for i in x:
-            lista_najboljih = lista_najboljih + [i]
-            f_najboljih = f_najboljih + [func(i)]
-            
-        lista_najboljih = [i for _,i in sorted(zip(f_najboljih, lista_najboljih))]
-        lista_najboljih = lista_najboljih[0:5]
+        naj_deca = list(x)
+        naj_deca = sorted(naj_deca, key=func)
+        p = 0
+        for i in naj_deca:
+            p = p + func(i) 
+        naj_deca = naj_deca[0:naj]
+        prosecni = prosecni + [p*3/x.size]
         x = np.array([])
-        for i in lista_najboljih:
+        for i in naj_deca:
             x1 = i + np.random.rand(bd, 3)*0.2-0.1
             x1[x1<0] = 0
             x1[x1>2] = 2
@@ -115,7 +118,33 @@ def pps(bd: int) -> tuple:
             if najbolje > func(i):
                 najbolje = func(i)
                 najbolje_x = i
-    print(najbolje, najbolje_x)
+        lista_najboljih = lista_najboljih + [najbolje]
+    return lista_najboljih, prosecni
 
 if __name__ == "__main__":
-    pps(50)
+    najbolji = np.array([])
+    prosecni = np.array([])
+    for i in range(100):
+        l_n, pr = pps(3, 2)
+        if najbolji.size == 0:
+            najbolji = np.array(l_n)
+            prosecni = np.array(pr)
+        else:
+            if najbolji.size < len(l_n):
+                while najbolji.size != len(l_n):
+                    najbolji = np.append(najbolji, 0)
+                    prosecni = np.append(prosecni, 0)
+            for j in range(len(l_n)):
+                najbolji[j] = najbolji[j]+l_n[j]
+                prosecni[j] = prosecni[j]+pr[j]
+    najbolji = najbolji/100
+    prosecni = prosecni/100
+    
+    fig, ax = plt.subplots(1, 3, figsize=(20,10), dpi=80);
+    t1 = np.arange(najbolji.size)
+    ax[0].plot(t1, najbolji, t1, prosecni)
+    ax[0].set_title('6 generisanih kandidata')
+    ax[0].legend(['prosecno resenje', 'najbolje resenje'])
+    ax[0].set_ylim(0, 3)
+    ax[0].set_xlabel('iteracije')
+    ax[0].set_ylabel('izlaz funkcije')
