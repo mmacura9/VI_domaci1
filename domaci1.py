@@ -121,30 +121,103 @@ def pps(bd: int, naj: int) -> tuple:
         lista_najboljih = lista_najboljih + [najbolje]
     return lista_najboljih, prosecni
 
-if __name__ == "__main__":
-    najbolji = np.array([])
-    prosecni = np.array([])
-    for i in range(100):
-        l_n, pr = pps(3, 2)
-        if najbolji.size == 0:
-            najbolji = np.array(l_n)
-            prosecni = np.array(pr)
-        else:
-            if najbolji.size < len(l_n):
-                while najbolji.size != len(l_n):
-                    najbolji = np.append(najbolji, 0)
-                    prosecni = np.append(prosecni, 0)
-            for j in range(len(l_n)):
-                najbolji[j] = najbolji[j]+l_n[j]
-                prosecni[j] = prosecni[j]+pr[j]
-    najbolji = najbolji/100
-    prosecni = prosecni/100
+def ga(num: int, iteracije: int) -> tuple:
+    """
     
-    fig, ax = plt.subplots(1, 3, figsize=(20,10), dpi=80);
-    t1 = np.arange(najbolji.size)
-    ax[0].plot(t1, najbolji, t1, prosecni)
-    ax[0].set_title('6 generisanih kandidata')
-    ax[0].legend(['prosecno resenje', 'najbolje resenje'])
-    ax[0].set_ylim(0, 3)
-    ax[0].set_xlabel('iteracije')
-    ax[0].set_ylabel('izlaz funkcije')
+    
+     Parameters
+    ----------
+    num : int
+        Velicina populacije.
+    iteracije : int
+        Broj iteracija.
+
+    Returns
+    -------
+    tuple
+        Genetski algoritam.
+
+    """
+    # inicijalizacija
+    x = np.random.rand(num, 3)*2
+    verovatnoce = np.arange(num) + 1
+    verovatnoce = verovatnoce / np.sum(verovatnoce)
+    verovatnoce = np.flip(verovatnoce)
+    verovatnoce = np.cumsum(verovatnoce)
+    prosecni = []
+    najbolji = []
+    for k in range(iteracije):
+        suma = 0
+        for i in x:
+            suma = suma + func(i)
+        prosecni = prosecni + [suma/num]
+        naj_deca = list(x)
+        naj_deca = sorted(naj_deca, key=func)
+        najbolji = najbolji + [func(naj_deca[0])]
+        za_ukrstanje = np.random.rand(1, int(1.8*num))[0]
+        # selekcija
+        for i in range(int(1.8*num)):
+            for j in range(int(1.8*num)):
+                if za_ukrstanje[i] < verovatnoce[j]:
+                    za_ukrstanje[i] = j
+                    break
+        
+        x = np.array([])
+        for i in range(int(1.8*num)//2):
+            # ukrstanje
+            prvi = naj_deca[int(za_ukrstanje[2*i])]
+            drugi = naj_deca[int(za_ukrstanje[2*i+1])]
+            novi = np.zeros(3)
+            presek = random.randint(1, 2)
+            if presek == 1:
+                novi[0] = math.sqrt(prvi[0]*drugi[0])
+                novi[1] = math.sqrt(prvi[1]*drugi[2])
+                novi[2] = math.sqrt(prvi[2]*drugi[1])
+            else:
+                novi[0] = math.sqrt(prvi[0]*drugi[1])
+                novi[1] = math.sqrt(prvi[1]*drugi[0])
+                novi[2] = math.sqrt(prvi[2]*drugi[2])
+            # mutacija
+            verovatnoca_mutacije = np.random.rand(1,3)[0]
+            mutacija = np.random.rand(1, 3)[0]*0.2 - 0.1
+            mutacija[verovatnoca_mutacije>0.2] = 0
+            novi = novi + mutacija
+            novi[novi<0] = 0
+            novi[novi>2] = 2
+            if x.size == 0:
+                x = novi
+            else:
+                x = np.vstack([x, novi])
+        for i in range(num//10):
+            x = np.vstack([x, naj_deca[i]])
+    naj_deca = list(x)
+    naj_deca = sorted(naj_deca, key=func)
+    suma = 0
+    for i in x:
+        suma = suma + func(i)
+    prosecni = prosecni + [suma/num]
+    najbolji = najbolji + [func(naj_deca[0])]
+    return np.array(prosecni), np.array(najbolji)
+
+if __name__ == "__main__":
+    prosecni = np.array([])
+    najbolji = np.array([])
+    
+    for i in range(100):
+        p, n = ga(20, 15)
+        if prosecni.size == 0:
+            prosecni = p
+            najbolji = n
+        else:
+            prosecni = prosecni + p
+            najbolji = najbolji + n
+            
+    prosecni = prosecni/100
+    najbolji = najbolji/100
+    t1 = np.arange(najbolji.size)*20
+    plt.plot(t1, prosecni, t1, najbolji)
+    plt.title('genetski algoritam sa parametrima 20, 15')
+    plt.legend(['prosecno resenje', 'najbolje resenje'])
+    plt.ylim(0, 3)
+    plt.xlabel('iteracije')
+    plt.ylabel('izlaz funkcije')
